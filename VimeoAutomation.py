@@ -40,17 +40,18 @@ def generate_title_and_description(data:dict):
         description += f"{key}: {value}\n"
     return title, description
 
-def upload_multiple_videos(master_csv_path, video_dir):
+def upload_multiple_videos(master_csv_path, video_dir, *args, **kwargs):
     not_uploaded_count = 0
     proccessed_count = 0
     backend_data = []
     video_uris = []
-    total_rows = sum(1 for line in open(master_csv_path, 'r', encoding='utf-8'))
     with open(master_csv_path, 'r', encoding='utf-8') as f:
         csv_reader = csv.DictReader(f)
         for row in csv_reader:
+            if 'location' in kwargs:
+                if kwargs['location'].strip().upper() != row['LOCATION'].strip().upper():
+                    continue
             proccessed_count += 1
-            k_print(f'Processing {proccessed_count}/{total_rows}')
             code = row['CODE'].strip()
             video_path = os.path.join(video_dir, code + '.mp4')
             name_english = row['OWNER NAME (ENGLISH)'].strip()
@@ -84,12 +85,16 @@ def upload_multiple_videos(master_csv_path, video_dir):
         for data in backend_data:
             writer.writerow(data)
         k_print('Backend data written to backend_data.csv', log_level='info')
-    print(video_uris)
-    res = vClient.put('/me/projects/21389077/videos', data={'uris': ", ".join(video_uris)})
-    print(res.json())
+    # print(video_uris)
+    # res = vClient.put('/me/projects/21389077/videos', data={'uris': ", ".join(video_uris)})
+    # print(res.json())
 
 if __name__ == '__main__':
     master_csv_path = r"F:\KOLY\Others\ExperimetalProj\UniDostiQrGen\master_guest_list.csv"
     video_path = r"F:\KOLY\Others\ExperimetalProj\UniDostiQrGen\videos"
 
-    upload_multiple_videos(master_csv_path, video_path)
+    # upload_multiple_videos(master_csv_path, video_path)
+    # res = vClient.post('/me/projects', data={'name': 'koly'})
+    # res = vClient.get('/me/projects/21393145')
+    # res = vClient.put('/me/projects/21393145/videos/973000088')
+    print(res.status_code, res.text)

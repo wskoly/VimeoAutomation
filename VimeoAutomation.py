@@ -43,9 +43,12 @@ def upload_video(video_path, video_title, video_description):
     return video_uri
 
 
-def generate_common_description(data: list):
-    description = "The video will cover for the following people:\n\n"
-    description += ",\n".join(
+def generate_common_description(data: list, with_header=True):
+    description = (
+        "The video will cover for the following people:\n\n" if with_header else ""
+    )
+    joiner = ",\n" if with_header else ", "
+    description += joiner.join(
         [f"{d['OWNER NAME (ENGLISH)']} - {d['CODE']}" for d in data]
     )
     return description
@@ -130,9 +133,9 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
             log_level="error",
         )
         return
+    k_print(f"Uploading videos for location: {location}", log_level="info")
     master_data = get_master_csv_data(master_csv_path, filter_location=location)
-    master_data_len = len(master_data)
-    k_print(f"Total data for location {location}: {len(master_data)}")
+    k_print(f"Total data for location {location}: {len(master_data)}", log_level="info")
     upload_data_list = []
     for video in os.listdir(video_dir):
         video_path = os.path.join(video_dir, video)
@@ -157,10 +160,10 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
 
     k_print(f"Matched Videos: {len(upload_data_list)}")
     k_print(
-        f"Remaining master data: {len(master_data)} for location {location} are: {generate_common_description(master_data)}"
+        f"Remaining master data: {len(master_data)} for location {location} are: {generate_common_description(master_data, with_header=False)}"
     )
-    procceed = input("Do you want to proceed? (y/n): ").upper()
-    if procceed != "Y":
+    proceed = input("Do you want to proceed? (y/n): ").upper()
+    if proceed != "Y":
         k_print("Exiting...")
         return
     output_csv_list = []
@@ -228,6 +231,8 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
         k_print(f"Uploaded data written to {location}_uploaded.csv", log_level="info")
 
     k_print(f"Remaining master data: {len(master_data)}", log_level="info")
+
+    k_print("Done uploading videos", log_level="info")
 
 
 def get_master_csv_data(master_csv_path, filter_location=None):

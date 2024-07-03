@@ -42,10 +42,14 @@ def upload_video(video_path, video_title, video_description):
     # vClient.get(video_uri, params={"fields": "link"})
     return video_uri
 
+
 def generate_common_description(data: list):
     description = "The video will cover for the following people:\n\n"
-    description += ",\n".join([f"{d['OWNER NAME (ENGLISH)']} - {d['CODE']}" for d in data])
+    description += ",\n".join(
+        [f"{d['OWNER NAME (ENGLISH)']} - {d['CODE']}" for d in data]
+    )
     return description
+
 
 def generate_title_and_description(data: dict):
     title = f"{data['CODE']} - {data['OWNER NAME (ENGLISH)']}"
@@ -141,12 +145,20 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
                 and d["LOCATION"].strip().upper() == kwargs["location"].strip().upper()
             ]
             if matched_data:
-                upload_data_list.append({'matched_data': matched_data, 'video_path': video_path, 'video_name': video_name})
+                upload_data_list.append(
+                    {
+                        "matched_data": matched_data,
+                        "video_path": video_path,
+                        "video_name": video_name,
+                    }
+                )
                 for el in matched_data:
                     master_data.remove(el)
 
     k_print(f"Matched Videos: {len(upload_data_list)}")
-    k_print(f"Remaining master data: {len(master_data)} for location {location} are: {generate_common_description(master_data)}")
+    k_print(
+        f"Remaining master data: {len(master_data)} for location {location} are: {generate_common_description(master_data)}"
+    )
     procceed = input("Do you want to proceed? (y/n): ").upper()
     if procceed != "Y":
         k_print("Exiting...")
@@ -154,9 +166,9 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
     output_csv_list = []
     i = 0
     while i < len(upload_data_list):
-        matched_data =upload_data_list[i]['matched_data']
-        video_path = upload_data_list[i]['video_path']
-        video_name = upload_data_list[i]['video_name']
+        matched_data = upload_data_list[i]["matched_data"]
+        video_path = upload_data_list[i]["video_path"]
+        video_name = upload_data_list[i]["video_name"]
         video_description = generate_common_description(matched_data)
         k_print(f"Uploading {video_path} with title {video_name}")
         try:
@@ -175,7 +187,10 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
                 )
             i += 1
         except Exception as e:
-            k_print(f"Failed to upload {video_name} with error: {e}, retrying after 10 seconds", log_level="error")
+            k_print(
+                f"Failed to upload {video_name} with error: {e}, retrying after 10 seconds",
+                log_level="error",
+            )
             time.sleep(10)
             continue
 
@@ -185,12 +200,20 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
                 f"/me/projects/{FOLDER_IDS[location.upper()]}/videos/{video_id}"
             )
             if res.status_code == 200:
-                k_print(f"Video {video_name} added to location {location}", log_level="info")
+                k_print(
+                    f"Video {video_name} added to location {location}", log_level="info"
+                )
             else:
-                k_print(f"Failed to add video {video_name} to folder {location}", log_level="error")
+                k_print(
+                    f"Failed to add video {video_name} to folder {location}",
+                    log_level="error",
+                )
         except Exception as e:
-            k_print(f"Failed to add video {video_name} to folder {location} with error: {e}", log_level="error")
-    
+            k_print(
+                f"Failed to add video {video_name} to folder {location} with error: {e}",
+                log_level="error",
+            )
+
     with open(
         os.path.join(output_dir, f"{location}_uploaded.csv"),
         "w",
@@ -205,7 +228,7 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
         k_print(f"Uploaded data written to {location}_uploaded.csv", log_level="info")
 
     k_print(f"Remaining master data: {len(master_data)}", log_level="info")
-        
+
 
 def get_master_csv_data(master_csv_path, filter_location=None):
     data_dict = []

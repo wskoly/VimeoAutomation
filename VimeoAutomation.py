@@ -136,6 +136,13 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
     k_print(f"Uploading videos for location: {location}", log_level="info")
     master_data = get_master_csv_data(master_csv_path, filter_location=location)
     k_print(f"Total data for location {location}: {len(master_data)}", log_level="info")
+    generated_videos = []
+    # get videos from video_dir recursively
+    for root, dirs, files in os.walk(video_dir):
+        for file in files:
+            if file.endswith(".mp4"):
+                generated_videos.append(os.path.join(root, file))
+    k_print(f"Total videos found in {video_dir}: {len(generated_videos)}")
     upload_data_list = []
     for video in os.listdir(video_dir):
         video_path = os.path.join(video_dir, video)

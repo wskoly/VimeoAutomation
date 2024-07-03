@@ -1,3 +1,5 @@
+from math import log
+import time
 from requests import get
 import vimeo
 import os
@@ -37,9 +39,13 @@ def upload_video(video_path, video_title, video_description):
     video_uri = vClient.upload(
         video_path, data={"name": video_title, "description": video_description}
     )
-    vClient.get(video_uri, params={"fields": "link"})
+    # vClient.get(video_uri, params={"fields": "link"})
     return video_uri
 
+def generate_common_description(data: list):
+    description = "The video will cover for the following people:\n\n"
+    description += ",\n".join([f"{d['OWNER NAME (ENGLISH)']} - {d['CODE']}" for d in data])
+    return description
 
 def generate_title_and_description(data: dict):
     title = f"{data['CODE']} - {data['OWNER NAME (ENGLISH)']}"
@@ -110,18 +116,106 @@ def upload_multiple_videos(master_csv_path, video_dir, *args, **kwargs):
 
 
 def upload_video_from_dir(video_dir, *args, **kwargs):
+    location = kwargs.get("location", None)
+    master_csv_path = kwargs.get("master_csv_path", None)
+    output_dir = kwargs.get("output_dir", os.path.join(os.getcwd(), "outputs"))
+    os.makedirs(output_dir, exist_ok=True)
+    if not location or not master_csv_path:
+        k_print(
+            f"Currently location and master_csv_path are required kwargs: location, master_csv_path",
+            log_level="error",
+        )
+        return
+    master_data = get_master_csv_data(master_csv_path, filter_location=location)
+    master_data_len = len(master_data)
+    k_print(f"Total data for location {location}: {len(master_data)}")
+    upload_data_list = []
     for video in os.listdir(video_dir):
         video_path = os.path.join(video_dir, video)
         if os.path.isfile(video_path):
-            video_title = video.split(".")[0]
-            video_description = video_title
-            upload_video(video_path, video_title, video_description)
+            video_name = video.split(".")[0].strip()
+            matched_data = [
+                d
+                for d in master_data
+                if video_name.strip() in d["OWNER NAME (BANGLA)"].strip()
+                and d["LOCATION"].strip().upper() == kwargs["location"].strip().upper()
+            ]
+            if matched_data:
+                upload_data_list.append({'matched_data': matched_data, 'video_path': video_path, 'video_name': video_name})
+                for el in matched_data:
+                    master_data.remove(el)
+
+    k_print(f"Matched Videos: {len(upload_data_list)}")
+    k_print(f"Remaining master data: {len(master_data)} for location {location} are: {generate_common_description(master_data)}")
+    procceed = input("Do you want to proceed? (y/n): ").upper()
+    if procceed != "Y":
+        k_print("Exiting...")
+        return
+    output_csv_list = []
+    i = 0
+    while i < len(upload_data_list):
+        matched_data =upload_data_list[i]['matched_data']
+        video_path = upload_data_list[i]['video_path']
+        video_name = upload_data_list[i]['video_name']
+        video_description = generate_common_description(matched_data)
+        k_print(f"Uploading {video_path} with title {video_name}")
+        try:
+            video_uri = upload_video(video_path, video_name, video_description)
+            vimeo_url = f"https://vimeo.com/{str(video_uri).split('/')[-1]}"
+            k_print(f"Uploaded {video_name} with URI {video_uri}", log_level="info")
+            for data in matched_data:
+                output_csv_list.append(
+                    {
+                        "code": data["CODE"],
+                        "name_english": data["OWNER NAME (ENGLISH)"],
+                        "name_bangla": data["OWNER NAME (BANGLA)"],
+                        "location": data["LOCATION"],
+                        "vimeo_url": vimeo_url,
+                    }
+                )
+            i += 1
+        except Exception as e:
+            k_print(f"Failed to upload {video_name} with error: {e}, retrying after 10 seconds", log_level="error")
+            time.sleep(10)
+            continue
+
+        try:
+            video_id = str(video_uri).split("/")[-1]
+            res = vClient.put(
+                f"/me/projects/{FOLDER_IDS[location.upper()]}/videos/{video_id}"
+            )
+            if res.status_code == 200:
+                k_print(f"Video {video_name} added to location {location}", log_level="info")
+            else:
+                k_print(f"Failed to add video {video_name} to folder {location}", log_level="error")
+        except Exception as e:
+            k_print(f"Failed to add video {video_name} to folder {location} with error: {e}", log_level="error")
+    
+    with open(
+        os.path.join(output_dir, f"{location}_uploaded.csv"),
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as f:
+        fieldnames = ["code", "name_english", "name_bangla", "location", "vimeo_url"]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for data in output_csv_list:
+            writer.writerow(data)
+        k_print(f"Uploaded data written to {location}_uploaded.csv", log_level="info")
+
+    k_print(f"Remaining master data: {len(master_data)}", log_level="info")
+        
+
 def get_master_csv_data(master_csv_path, filter_location=None):
     data_dict = []
     with open(master_csv_path, "r", encoding="utf-8") as f:
         csv_reader = csv.DictReader(f)
         for row in csv_reader:
-            if filter_location and filter_location.strip().upper() != row["LOCATION"].strip().upper():
+            if (
+                filter_location
+                and filter_location.strip().upper() != row["LOCATION"].strip().upper()
+            ):
                 continue
             data_dict.append(row)
     return data_dict
@@ -253,4 +347,4 @@ if __name__ == "__main__":
     # res = vClient.put('/me/projects/21393145/videos/973000088')
     # print(res.status_code, res.text)
 
-    get_videos_info(location="CHITTAGONG", master_csv_path=master_csv_path)
+    # get_videos_info(location="CHITTAGONG", master_csv_path=master_csv_path)

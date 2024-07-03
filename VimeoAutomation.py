@@ -109,6 +109,13 @@ def upload_multiple_videos(master_csv_path, video_dir, *args, **kwargs):
     # print(res.json())
 
 
+def upload_video_from_dir(video_dir, *args, **kwargs):
+    for video in os.listdir(video_dir):
+        video_path = os.path.join(video_dir, video)
+        if os.path.isfile(video_path):
+            video_title = video.split(".")[0]
+            video_description = video_title
+            upload_video(video_path, video_title, video_description)
 def get_master_csv_data(master_csv_path, filter_location=None):
     data_dict = []
     with open(master_csv_path, "r", encoding="utf-8") as f:

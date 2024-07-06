@@ -13,7 +13,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-FOLDER_IDS = {"CHITTAGONG": "21407340"}
+FOLDER_IDS = {"CHITTAGONG": "21424272"}
 CONFIG = {}
 with open("config.json", "r") as f:
     CONFIG = json.load(f)
@@ -49,7 +49,7 @@ def generate_common_description(data: list, with_header=True):
     )
     joiner = ",\n" if with_header else ", "
     description += joiner.join(
-        [f"{d['OWNER NAME (ENGLISH)']} - {d['CODE']}" for d in data]
+        [f"{d['OWNER NAME (ENGLISH)']} ({d['OWNER NAME (BANGLA)']}) - {d['CODE']}" for d in data]
     )
     return description
 
@@ -143,11 +143,11 @@ def upload_video_from_dir(video_dir, *args, **kwargs):
             if file.endswith(".mp4"):
                 generated_videos.append(os.path.join(root, file))
     k_print(f"Total videos found in {video_dir}: {len(generated_videos)}")
+    print([os.path.basename(v).split('.')[0] for v in generated_videos])
     upload_data_list = []
-    for video in os.listdir(video_dir):
-        video_path = os.path.join(video_dir, video)
+    for video_path in generated_videos:
         if os.path.isfile(video_path):
-            video_name = video.split(".")[0].strip()
+            video_name = os.path.basename(video_path).split(".")[0]
             matched_data = [
                 d
                 for d in master_data
@@ -374,7 +374,7 @@ if __name__ == "__main__":
     master_csv_path = (
         r"F:\KOLY\Others\ExperimetalProj\UniDostiQrGen\master_guest_list.csv"
     )
-    video_path = r"F:\KOLY\Others\ExperimetalProj\UniDostiQrGen\videos"
+    video_path = r"C:\Users\kolys\OneDrive\Desktop\Chittagong_Final_242"
 
     # upload_multiple_videos(master_csv_path, video_path)
     # res = vClient.post('/me/projects', data={'name': 'koly'})
@@ -383,3 +383,9 @@ if __name__ == "__main__":
     # print(res.status_code, res.text)
 
     # get_videos_info(location="CHITTAGONG", master_csv_path=master_csv_path)
+    upload_video_from_dir(
+        video_dir=video_path,
+        location="CHITTAGONG",
+        master_csv_path=master_csv_path,
+        output_dir=os.path.join(os.getcwd(), "outputs"),
+    )

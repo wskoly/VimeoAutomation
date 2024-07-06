@@ -371,21 +371,22 @@ def get_videos_info(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    master_csv_path = (
-        r"F:\KOLY\Others\ExperimetalProj\UniDostiQrGen\master_guest_list.csv"
-    )
+    master_csv_path = r"master_guest_list.csv"
     video_path = r"C:\Users\kolys\OneDrive\Desktop\Chittagong_Final_242"
 
     # upload_multiple_videos(master_csv_path, video_path)
-    # res = vClient.post('/me/projects', data={'name': 'koly'})
+    res = vClient.post('/me/projects', data={'name': 'koly'})
+    res_json = res.json()
+    folder_id = res_json["uri"].split('/')[-1]
+    print(folder_id)
     # res = vClient.get('/me/projects/21393145')
     # res = vClient.put('/me/projects/21393145/videos/973000088')
     # print(res.status_code, res.text)
 
     # get_videos_info(location="CHITTAGONG", master_csv_path=master_csv_path)
-    upload_video_from_dir(
-        video_dir=video_path,
-        location="CHITTAGONG",
-        master_csv_path=master_csv_path,
-        output_dir=os.path.join(os.getcwd(), "outputs"),
-    )
+    # upload_video_from_dir(
+    #     video_dir=video_path,
+    #     location="CHITTAGONG",
+    #     master_csv_path=master_csv_path,
+    #     output_dir=os.path.join(os.getcwd(), "outputs"),
+    # )
